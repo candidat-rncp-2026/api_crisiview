@@ -62,6 +62,8 @@ pipeline {
             steps {
                 sh """
                     docker network connect ${DOCKER_NETWORK} \$(hostname) || true
+                    sleep 5
+                    ping -c 1 ${MYSQL_CONTAINER} || true
                     DB_HOST=${MYSQL_CONTAINER} \
                     DB_PORT=3306 \
                     DB_USER=root \
@@ -129,6 +131,7 @@ pipeline {
     post {
         always {
             sh "docker rm -f ${MYSQL_CONTAINER} || true"
+            sh "docker network disconnect ${DOCKER_NETWORK} \$(hostname) || true"
             sh "docker network rm ${DOCKER_NETWORK} || true"
             archiveArtifacts artifacts: 'coverage/**/*', allowEmptyArchive: true
         }
