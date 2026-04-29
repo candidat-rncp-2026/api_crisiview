@@ -2,7 +2,10 @@ pipeline {
     agent {
         docker {
             image 'node:20-bookworm'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -u root'
+            args '''-v /var/run/docker.sock:/var/run/docker.sock \
+                    -v /usr/bin/docker:/usr/bin/docker \
+                    -v /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins \
+                    -u root'''
         }
     }
 
@@ -45,8 +48,9 @@ pipeline {
                         -e MYSQL_ROOT_PASSWORD=root \
                         -e MYSQL_DATABASE=crisiview \
                         -p 3308:3306 \
-                        mysql:8.4.8
-                    sleep 25
+                        mysql:8.4.8 \
+                        --default-authentication-plugin=mysql_native_password
+                    sleep 30
                 """
             }
         }
