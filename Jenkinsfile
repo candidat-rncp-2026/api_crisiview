@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'node:20-alpine'
-            args '-v /var/run/docker.sock:/var/run/docker.sock -u root'
+            args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -u root'
         }
     }
 
@@ -33,7 +33,6 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh '''
-                    apk add --no-cache docker-cli
                     docker run --rm \
                         -v $(pwd):/usr/src \
                         -e SONAR_HOST_URL=http://10.0.2.15:9000 \
@@ -54,7 +53,6 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'apk add --no-cache docker-cli'
                 sh "docker build -t ${DOCKER_IMAGE}:${VERSION} -t ${DOCKER_IMAGE}:latest ."
             }
         }
@@ -67,7 +65,6 @@ pipeline {
 
         stage('Deploy Staging') {
             steps {
-                sh 'apk add --no-cache docker-cli'
                 sh 'docker compose -f /home/arnol/staging/docker-compose.yml up -d --build'
             }
         }
