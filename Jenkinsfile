@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node:20-alpine'
+            image 'node:20-bullseye'
             args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -u root'
         }
     }
@@ -9,6 +9,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'api-crisiview'
         VERSION = "${BUILD_NUMBER}"
+        MYSQL_CONTAINER = "mysql-test-${BUILD_NUMBER}"
     }
 
     stages {
@@ -24,24 +25,45 @@ pipeline {
             }
         }
 
+        stage('Start MySQL') {
+            steps {
+                sh """
+                    docker run -d \
+                        --name ${MYSQL_CONTAINER} \
+                        -e MYSQL_ROOT_PASSWORD=root \
+                        -e MYSQL_DATABASE=crisiview \
+                        -p 3308:3306 \
+                        mysql:8.4.8
+                    sleep 20
+                """
+            }
+        }
+
         stage('Test') {
             steps {
-                sh 'npm test -- --coverage --coverageDirectory=coverage || true'
+                sh """
+                    DB_HOST=10.0.2.15 \
+                    DB_PORT=3308 \
+                    DB_USER=root \
+                    DB_PASS=root \
+                    DB_NAME=crisiview \
+                    npm test -- --coverage --coverageDirectory=coverage || true
+                """
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh '''
+                sh """
                     docker run --rm \
-                        -v $(pwd):/usr/src \
+                        -v \$(pwd):/usr/src \
                         -e SONAR_HOST_URL=http://10.0.2.15:9000 \
                         -e SONAR_TOKEN=sqp_f1aa11b84ca1938892f093163e108a365511b164 \
                         sonarsource/sonar-scanner-cli:latest \
                         -Dsonar.projectKey=api \
                         -Dsonar.sources=. \
                         -Dsonar.exclusions=node_modules/**,coverage/**
-                '''
+                """
             }
         }
 
@@ -72,7 +94,6 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh 'sleep 15'
-                sh 'apk add --no-cache curl'
                 sh 'curl -f http://10.0.2.15:3001/techniciens || echo "API not ready yet"'
             }
         }
@@ -80,6 +101,7 @@ pipeline {
 
     post {
         always {
+            sh "docker rm -f ${MYSQL_CONTAINER} || true"
             archiveArtifacts artifacts: 'coverage/**/*', allowEmptyArchive: true
         }
         success {
