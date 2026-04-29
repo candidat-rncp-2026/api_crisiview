@@ -85,8 +85,7 @@ pipeline {
                         sonarsource/sonar-scanner-cli:latest \
                         -Dsonar.projectKey=api \
                         -Dsonar.sources=. \
-                        -Dsonar.tests=__tests__ \
-                        -Dsonar.exclusions=node_modules/**,coverage/** \
+                        -Dsonar.exclusions=node_modules/**,coverage/**,__tests__/** \
                         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                 """
             }
