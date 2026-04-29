@@ -33,8 +33,11 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh '''
+                    apk add --no-cache openjdk17-jre
                     npm install -g sonar-scanner
-                    sonar-scanner \
+                    chmod +x /usr/local/lib/node_modules/sonar-scanner/bin/sonar-scanner
+                    chmod +x /usr/local/lib/node_modules/sonar-scanner/bin/sonar-scanner-macosx
+                    /usr/local/lib/node_modules/sonar-scanner/bin/sonar-scanner \
                         -Dsonar.projectKey=api \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=http://10.0.2.15:9000 \
