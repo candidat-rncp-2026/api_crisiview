@@ -5,6 +5,7 @@ pipeline {
             args '''-v /var/run/docker.sock:/var/run/docker.sock \
                     -v /usr/bin/docker:/usr/bin/docker \
                     -v /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins \
+                    -v /home/arnol/staging:/home/arnol/staging \
                     -u root'''
         }
     }
@@ -13,6 +14,7 @@ pipeline {
         DOCKER_IMAGE = 'candidatrncp2026/api-crisiview'
         VERSION = "${BUILD_NUMBER}"
         MYSQL_CONTAINER = "mysql-test-${BUILD_NUMBER}"
+        DOCKER_NETWORK = "test-network-${BUILD_NUMBER}"
     }
 
     stages {
@@ -43,11 +45,12 @@ pipeline {
         stage('Start MySQL') {
             steps {
                 sh """
+                    docker network create ${DOCKER_NETWORK} || true
                     docker run -d \
                         --name ${MYSQL_CONTAINER} \
+                        --network ${DOCKER_NETWORK} \
                         -e MYSQL_ROOT_PASSWORD=root \
                         -e MYSQL_DATABASE=crisiview \
-                        -p 3308:3306 \
                         mysql:8.4.8 \
                         --default-authentication-plugin=mysql_native_password
                     sleep 30
@@ -58,12 +61,17 @@ pipeline {
         stage('Test') {
             steps {
                 sh """
-                    DB_HOST=10.0.2.15 \
-                    DB_PORT=3308 \
-                    DB_USER=root \
-                    DB_PASS=root \
-                    DB_NAME=crisiview \
-                    npm test -- --coverage --coverageDirectory=coverage || true
+                    docker run --rm \
+                        --network ${DOCKER_NETWORK} \
+                        -v \$(pwd):/app \
+                        -w /app \
+                        -e DB_HOST=${MYSQL_CONTAINER} \
+                        -e DB_PORT=3306 \
+                        -e DB_USER=root \
+                        -e DB_PASS=root \
+                        -e DB_NAME=crisiview \
+                        node:20-bookworm \
+                        sh -c "npm test -- --coverage --coverageDirectory=coverage || true"
                 """
             }
         }
@@ -125,6 +133,7 @@ pipeline {
     post {
         always {
             sh "docker rm -f ${MYSQL_CONTAINER} || true"
+            sh "docker network rm ${DOCKER_NETWORK} || true"
             archiveArtifacts artifacts: 'coverage/**/*', allowEmptyArchive: true
         }
         success {
