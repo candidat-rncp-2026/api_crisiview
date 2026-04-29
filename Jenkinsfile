@@ -46,14 +46,14 @@ pipeline {
             steps {
                 sh """
                     docker network create ${DOCKER_NETWORK} || true
+                    docker rm -f ${MYSQL_CONTAINER} || true
                     docker run -d \
                         --name ${MYSQL_CONTAINER} \
                         --network ${DOCKER_NETWORK} \
                         -e MYSQL_ROOT_PASSWORD=root \
                         -e MYSQL_DATABASE=crisiview \
-                        mysql:8.4.8 \
-                        --default-authentication-plugin=mysql_native_password
-                    sleep 30
+                        mysql:8.4.8
+                    sleep 25
                 """
             }
         }
@@ -62,9 +62,9 @@ pipeline {
             steps {
                 sh """
                     docker network connect ${DOCKER_NETWORK} \$(hostname) || true
-                    sleep 5
-                    ping -c 1 ${MYSQL_CONTAINER} || true
-                    DB_HOST=${MYSQL_CONTAINER} \
+                    MYSQL_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${MYSQL_CONTAINER})
+                    echo "MySQL IP : \${MYSQL_IP}"
+                    DB_HOST=\${MYSQL_IP} \
                     DB_PORT=3306 \
                     DB_USER=root \
                     DB_PASS=root \
@@ -122,8 +122,12 @@ pipeline {
 
         stage('Smoke Test') {
             steps {
-                sh 'sleep 15'
-                sh 'curl -f http://10.0.2.15:3001/techniciens || echo "API not ready yet"'
+                sh """
+                    sleep 20
+                    API_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+                    echo "Test API sur IP : \${API_IP}"
+                    curl -f http://\${API_IP}:3001/techniciens || echo "API not ready yet"
+                """
             }
         }
     }
