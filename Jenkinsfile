@@ -9,8 +9,6 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'api-crisiview'
         VERSION = "${BUILD_NUMBER}"
-        SONAR_HOST_URL = 'http://10.0.2.15:9000'
-        SONAR_TOKEN = 'sqp_f1aa11b84ca1938892f093163e108a365511b164'
     }
 
     stages {
@@ -35,14 +33,14 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh '''
-                    apk add --no-cache openjdk17-jre curl unzip
-                    curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-6.2.1.4610-linux-x64.zip
-                    unzip -q /tmp/sonar-scanner.zip -d /tmp/
-                    /tmp/sonar-scanner-6.2.1.4610-linux-x64/bin/sonar-scanner \
+                    apk add --no-cache docker-cli
+                    docker run --rm \
+                        -v $(pwd):/usr/src \
+                        -e SONAR_HOST_URL=http://10.0.2.15:9000 \
+                        -e SONAR_TOKEN=sqp_f1aa11b84ca1938892f093163e108a365511b164 \
+                        sonarsource/sonar-scanner-cli:latest \
                         -Dsonar.projectKey=api \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=http://10.0.2.15:9000 \
-                        -Dsonar.token=sqp_f1aa11b84ca1938892f093163e108a365511b164 \
                         -Dsonar.exclusions=node_modules/**,coverage/**
                 '''
             }
