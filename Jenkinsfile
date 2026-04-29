@@ -61,17 +61,13 @@ pipeline {
         stage('Test') {
             steps {
                 sh """
-                    docker run --rm \
-                        --network ${DOCKER_NETWORK} \
-                        -v \$(pwd):/app \
-                        -w /app \
-                        -e DB_HOST=${MYSQL_CONTAINER} \
-                        -e DB_PORT=3306 \
-                        -e DB_USER=root \
-                        -e DB_PASS=root \
-                        -e DB_NAME=crisiview \
-                        node:20-bookworm \
-                        sh -c "npm test -- --coverage --coverageDirectory=coverage || true"
+                    docker network connect ${DOCKER_NETWORK} \$(hostname) || true
+                    DB_HOST=${MYSQL_CONTAINER} \
+                    DB_PORT=3306 \
+                    DB_USER=root \
+                    DB_PASS=root \
+                    DB_NAME=crisiview \
+                    npm test -- --coverage --coverageDirectory=coverage || true
                 """
             }
         }
