@@ -125,10 +125,10 @@ pipeline {
         stage('Smoke Test') {
             steps {
                 sh """
-                    sleep 20
-                    API_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-                    echo "Test API sur IP : \${API_IP}"
-                    curl -f http://\${API_IP}:3001/techniciens || echo "API not ready yet"
+                    sleep 25
+                    docker network connect staging_app-network \$(hostname) || true
+                    echo "Verification API via reseau staging..."
+                    curl -f http://api:3001/techniciens || echo "API not ready yet"
                 """
             }
         }
@@ -139,6 +139,7 @@ pipeline {
             sh "docker rm -f ${MYSQL_CONTAINER} || true"
             sh "docker network disconnect ${DOCKER_NETWORK} \$(hostname) || true"
             sh "docker network rm ${DOCKER_NETWORK} || true"
+            sh "docker network disconnect staging_app-network \$(hostname) || true"
             archiveArtifacts artifacts: 'coverage/**/*', allowEmptyArchive: true
         }
         success {
