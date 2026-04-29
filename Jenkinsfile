@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node:20-bullseye'
+            image 'node:20-bookworm'
             args '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker -u root'
         }
     }
@@ -34,7 +34,7 @@ pipeline {
                         -e MYSQL_DATABASE=crisiview \
                         -p 3308:3306 \
                         mysql:8.4.8
-                    sleep 20
+                    sleep 25
                 """
             }
         }
