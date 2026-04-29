@@ -83,8 +83,10 @@ pipeline {
                         -e SONAR_TOKEN=sqp_f1aa11b84ca1938892f093163e108a365511b164 \
                         sonarsource/sonar-scanner-cli:latest \
                         -Dsonar.projectKey=api \
-                        -Dsonar.sources=. \
-                        -Dsonar.exclusions=node_modules/**,coverage/**
+                        -Dsonar.sources=/usr/src \
+                        -Dsonar.exclusions=node_modules/**,coverage/**,__tests__/** \
+                        -Dsonar.tests=/usr/src/__tests__ \
+                        -Dsonar.javascript.lcov.reportPaths=/usr/src/coverage/lcov.info
                 """
             }
         }
