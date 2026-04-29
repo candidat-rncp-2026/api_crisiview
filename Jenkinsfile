@@ -53,7 +53,7 @@ pipeline {
                         -e MYSQL_ROOT_PASSWORD=root \
                         -e MYSQL_DATABASE=crisiview \
                         mysql:8.4.8
-                    sleep 25
+                    sleep 40
                 """
             }
         }
@@ -78,15 +78,16 @@ pipeline {
             steps {
                 sh """
                     docker run --rm \
-                        -v \$(pwd):/usr/src \
+                        --volumes-from \$(hostname) \
+                        -w \$(pwd) \
                         -e SONAR_HOST_URL=http://10.0.2.15:9000 \
                         -e SONAR_TOKEN=sqp_f1aa11b84ca1938892f093163e108a365511b164 \
                         sonarsource/sonar-scanner-cli:latest \
                         -Dsonar.projectKey=api \
-                        -Dsonar.sources=/usr/src \
-                        -Dsonar.exclusions=node_modules/**,coverage/**,__tests__/** \
-                        -Dsonar.tests=/usr/src/__tests__ \
-                        -Dsonar.javascript.lcov.reportPaths=/usr/src/coverage/lcov.info
+                        -Dsonar.sources=. \
+                        -Dsonar.tests=__tests__ \
+                        -Dsonar.exclusions=node_modules/**,coverage/** \
+                        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                 """
             }
         }
